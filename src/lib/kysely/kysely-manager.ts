@@ -1,6 +1,6 @@
 import { prerelease, rcompare } from "semver";
 import { KYSELY_MAX_VERSION_AGE_YEARS, KYSELY_MIN_VERSIONS, KYSELY_PACKAGE_NAME } from "../constants";
-import { listNpmVersions } from "../utility/npm-registry-utils";
+import { listExportedModules, listNpmVersions, type NpmVersion } from "../utility/npm-registry-utils";
 import { KyselyModule } from "./kysely-module";
 
 export class KyselyManager {
@@ -17,28 +17,34 @@ export class KyselyManager {
     const cutoffMs = cutoff.getTime();
 
     // keep everything from the last N years, but never fewer than the latest M
-    const versions = stable
-      .filter((it, index) => index < KYSELY_MIN_VERSIONS || it.publishedAt >= cutoffMs)
-      .map((it) => it.version);
+    const versions = stable.filter(
+      (it, index) => index < KYSELY_MIN_VERSIONS || it.publishedAt >= cutoffMs,
+    );
 
     return new KyselyManager(versions);
   }
 
-  private constructor(private readonly versions: ReadonlyArray<string>) {}
+  private constructor(private readonly versions: ReadonlyArray<NpmVersion>) {}
 
   getVersions(): string[] {
-    return this.versions.slice();
+    return this.versions.map((it) => it.version);
   }
 
   getLatestVersion(): string {
-    return this.versions[0];
+    return this.versions[0].version;
   }
 
   hasVersion(version: string): boolean {
-    return this.versions.includes(version);
+    return this.versions.some((it) => it.version === version);
   }
 
   getModule(version: string): KyselyModule {
-    return new KyselyModule(version);
+    const published = this.versions.find((it) => it.version === version);
+    if (!published) {
+      throw new Error(`kysely ${version} not found`);
+    }
+    // The set of importable modules is discovered from this version's published
+    // `exports`, so new kysely subpath exports work without playground changes.
+    return new KyselyModule(version, listExportedModules(KYSELY_PACKAGE_NAME, published.exports));
   }
 }

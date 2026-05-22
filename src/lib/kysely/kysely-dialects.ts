@@ -16,8 +16,6 @@ export type KyselyDialect = {
   adapter: string;
   introspector: string;
   queryCompiler: string;
-  /** Import specifier for the dialect's query-building helpers. */
-  helpersImportPath: string;
 };
 
 export const KYSELY_DIALECTS: Record<SqlDialect, Array<KyselyDialect>> = {
@@ -28,7 +26,6 @@ export const KYSELY_DIALECTS: Record<SqlDialect, Array<KyselyDialect>> = {
       adapter: "PostgresAdapter",
       introspector: "PostgresIntrospector",
       queryCompiler: "PostgresQueryCompiler",
-      helpersImportPath: "kysely/helpers/postgres",
     },
   ],
   mysql: [
@@ -38,7 +35,6 @@ export const KYSELY_DIALECTS: Record<SqlDialect, Array<KyselyDialect>> = {
       adapter: "MysqlAdapter",
       introspector: "MysqlIntrospector",
       queryCompiler: "MysqlQueryCompiler",
-      helpersImportPath: "kysely/helpers/mysql",
     },
   ],
   mssql: [
@@ -48,7 +44,6 @@ export const KYSELY_DIALECTS: Record<SqlDialect, Array<KyselyDialect>> = {
       adapter: "MssqlAdapter",
       introspector: "MssqlIntrospector",
       queryCompiler: "MssqlQueryCompiler",
-      helpersImportPath: "kysely/helpers/mssql",
     },
   ],
   sqlite: [
@@ -58,7 +53,6 @@ export const KYSELY_DIALECTS: Record<SqlDialect, Array<KyselyDialect>> = {
       adapter: "SqliteAdapter",
       introspector: "SqliteIntrospector",
       queryCompiler: "SqliteQueryCompiler",
-      helpersImportPath: "kysely/helpers/sqlite",
     },
   ],
 };

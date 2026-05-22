@@ -14,7 +14,15 @@ export type TypeFile = {
 };
 
 export class KyselyModule {
-  constructor(readonly version: string) {}
+  /**
+   * @param moduleSpecifiers - Import specifiers for every module the playground
+   *   may import at runtime (`kysely` plus each of this version's subpath
+   *   exports), discovered from the version's `package.json` `exports` field.
+   */
+  constructor(
+    readonly version: string,
+    private readonly moduleSpecifiers: ReadonlyArray<string>,
+  ) {}
 
   getDialects(): Array<SqlDialect> {
     return getSupportedDialects(this.version);
@@ -26,10 +34,10 @@ export class KyselyModule {
 
   /**
    * Import specifier -> esm.sh URL for every module the playground may import
-   * at runtime (`kysely` itself plus each supported dialect's helpers).
+   * at runtime (`kysely` itself plus each of its subpath exports).
    */
   getEntrypoints(): Array<Entrypoint> {
-    return [...this.getModuleSpecifiers()].map((module) => ({
+    return this.moduleSpecifiers.map((module) => ({
       module,
       url: esmShModuleUrl(KYSELY_PACKAGE_NAME, this.version, subpathOf(module)),
     }));
@@ -87,7 +95,7 @@ export class KyselyModule {
   private async resolveDeclarationRoots(): Promise<Array<string>> {
     const base = `${esmShModuleUrl(KYSELY_PACKAGE_NAME, this.version)}/`;
     const roots = await Promise.all(
-      [...this.getModuleSpecifiers()].map(async (specifier) => {
+      this.moduleSpecifiers.map(async (specifier) => {
         const res = await fetch(esmShModuleUrl(KYSELY_PACKAGE_NAME, this.version, subpathOf(specifier)), {
           method: "HEAD",
         });
@@ -96,16 +104,6 @@ export class KyselyModule {
       }),
     );
     return roots.filter((it): it is string => it !== undefined);
-  }
-
-  private getModuleSpecifiers(): Set<string> {
-    const specifiers = new Set<string>([KYSELY_PACKAGE_NAME]);
-    for (const dialect of this.getDialects()) {
-      const config = resolveKyselyDialect(dialect, this.version)!;
-      specifiers.add(config.importPath);
-      specifiers.add(config.helpersImportPath);
-    }
-    return specifiers;
   }
 }
 
