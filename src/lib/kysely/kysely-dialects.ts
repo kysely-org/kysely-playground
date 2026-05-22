@@ -1,6 +1,13 @@
 import { satisfies } from "semver";
+import { isKyselyBranch } from "./kysely-version";
 
 export type SqlDialect = "postgres" | "mysql" | "mssql" | "sqlite";
+
+/**
+ * A git branch always tracks the newest kysely, so its dialects are resolved
+ * against an unreachably-high version that satisfies every `>=` range.
+ */
+const BRANCH_DIALECT_SEMVER = "9999.0.0";
 
 /**
  * How a single SQL dialect maps onto a range of kysely versions.
@@ -62,8 +69,9 @@ export const KYSELY_DIALECTS: Record<SqlDialect, Array<KyselyDialect>> = {
  * kysely version, or `undefined` when the version doesn't support it.
  */
 export function resolveKyselyDialect(dialect: SqlDialect, version: string): KyselyDialect | undefined {
+  const semver = isKyselyBranch(version) ? BRANCH_DIALECT_SEMVER : version;
   return KYSELY_DIALECTS[dialect].find((entry) =>
-    satisfies(version, entry.versionRange, { includePrerelease: true }),
+    satisfies(semver, entry.versionRange, { includePrerelease: true }),
   );
 }
 

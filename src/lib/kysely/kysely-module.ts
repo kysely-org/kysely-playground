@@ -1,7 +1,8 @@
-import { KYSELY_PACKAGE_NAME } from "../constants";
-import { esmShFileUrl, esmShModuleUrl } from "../utility/esm-sh-utils";
+import { ESM_SH_URL, KYSELY_PACKAGE_NAME } from "../constants";
+import { esmShModuleUrl, splitEsmShUrl } from "../utility/esm-sh-utils";
 import { StringUtils } from "../utility/string-utils";
 import { getSupportedDialects, resolveKyselyDialect, type KyselyDialect, type SqlDialect } from "./kysely-dialects";
+import { kyselyEsmShName } from "./kysely-version";
 
 export type Entrypoint = {
   module: string;
@@ -37,9 +38,10 @@ export class KyselyModule {
    * at runtime (`kysely` itself plus each of its subpath exports).
    */
   getEntrypoints(): Array<Entrypoint> {
+    const esmShName = kyselyEsmShName(this.version);
     return this.moduleSpecifiers.map((module) => ({
       module,
-      url: esmShModuleUrl(KYSELY_PACKAGE_NAME, this.version, subpathOf(module)),
+      url: esmShModuleUrl(esmShName, this.version, subpathOf(module)),
     }));
   }
 
@@ -49,18 +51,22 @@ export class KyselyModule {
    * declaration is `index.d.ts` regardless of where kysely keeps its build.
    */
   async loadTypeFiles(): Promise<Array<TypeFile>> {
-    const roots = await this.resolveDeclarationRoots();
-    if (roots.length === 0) {
+    const rootUrls = await this.resolveDeclarationRoots();
+    if (rootUrls.length === 0) {
       return [];
     }
-    const distPrefix = commonDirPrefix(roots);
+    // Every declaration lives under the same `package@ref`, so any root yields
+    // the esm.sh base URL the rest of the `.d.ts` graph is fetched relative to.
+    const roots = rootUrls.map(splitEsmShUrl);
+    const base = roots[0].base;
+    const distPrefix = commonDirPrefix(roots.map((it) => it.path));
 
     const files = new Map<string, string>();
-    let frontier = [...new Set(roots)];
+    let frontier = [...new Set(roots.map((it) => it.path))];
     while (frontier.length > 0) {
       const fetched = await Promise.all(
         frontier.map(async (path) => {
-          const res = await fetch(esmShFileUrl(KYSELY_PACKAGE_NAME, this.version, path));
+          const res = await fetch(`${base}${path}`);
           if (!res.ok) {
             throw new Error(`esm.sh error ${res.status} for ${path}`);
           }
@@ -88,22 +94,22 @@ export class KyselyModule {
   }
 
   /**
-   * The dist-relative `.d.ts` entry of `kysely` and each helper, discovered
-   * from esm.sh's `X-TypeScript-Types` header (kysely's build layout has
-   * changed between versions, so it can't be hardcoded).
+   * Absolute esm.sh `.d.ts` entry URLs of `kysely` and each helper, read from
+   * esm.sh's `X-TypeScript-Types` header. They can't be hardcoded: kysely's
+   * build layout changes between versions, and branches resolve to a commit
+   * SHA rather than the requested branch name.
    */
   private async resolveDeclarationRoots(): Promise<Array<string>> {
-    const base = `${esmShModuleUrl(KYSELY_PACKAGE_NAME, this.version)}/`;
+    const esmShName = kyselyEsmShName(this.version);
     const roots = await Promise.all(
       this.moduleSpecifiers.map(async (specifier) => {
-        const res = await fetch(esmShModuleUrl(KYSELY_PACKAGE_NAME, this.version, subpathOf(specifier)), {
+        const res = await fetch(esmShModuleUrl(esmShName, this.version, subpathOf(specifier)), {
           method: "HEAD",
         });
-        const typesUrl = res.headers.get("x-typescript-types");
-        return typesUrl?.startsWith(base) ? typesUrl.slice(base.length) : undefined;
+        return res.headers.get("x-typescript-types") ?? undefined;
       }),
     );
-    return roots.filter((it): it is string => it !== undefined);
+    return roots.filter((it): it is string => it !== undefined && it.startsWith(`${ESM_SH_URL}/`));
   }
 }
 

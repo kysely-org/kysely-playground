@@ -11,6 +11,14 @@ export const ESM_SH_URL = "https://esm.sh";
 export const NPM_REGISTRY_URL = "https://registry.npmjs.org";
 
 export const KYSELY_PACKAGE_NAME = "kysely";
+/** GitHub repository the kysely git branches are built from. */
+export const KYSELY_GITHUB_REPO = "kysely-org/kysely";
+/**
+ * kysely git branches offered as versions alongside published npm releases.
+ * Order is the dropdown order — `next` is typically further ahead of the
+ * latest release than `master`, so it leads.
+ */
+export const KYSELY_BRANCH_VERSIONS = ["next", "master"] as const;
 /** Always keep at least this many of the most recent kysely versions. */
 export const KYSELY_MIN_VERSIONS = 10;
 /** Drop kysely versions published longer ago than this (unless kept by the minimum). */

@@ -1,11 +1,28 @@
 import { prerelease, rcompare } from "semver";
-import { KYSELY_MAX_VERSION_AGE_YEARS, KYSELY_MIN_VERSIONS, KYSELY_PACKAGE_NAME } from "../constants";
+import {
+  KYSELY_BRANCH_VERSIONS,
+  KYSELY_MAX_VERSION_AGE_YEARS,
+  KYSELY_MIN_VERSIONS,
+  KYSELY_PACKAGE_NAME,
+} from "../constants";
+import { fetchEsmShExports } from "../utility/esm-sh-utils";
+import { logger } from "../utility/logger";
 import { listExportedModules, listNpmVersions, type NpmVersion } from "../utility/npm-registry-utils";
 import { KyselyModule } from "./kysely-module";
+import { kyselyEsmShName } from "./kysely-version";
+
+/** A kysely git branch offered as a version, with its importable modules. */
+type BranchVersion = {
+  name: string;
+  moduleSpecifiers: Array<string>;
+};
 
 export class KyselyManager {
   static async init(): Promise<KyselyManager> {
-    const published = await listNpmVersions(KYSELY_PACKAGE_NAME);
+    const [published, branches] = await Promise.all([
+      listNpmVersions(KYSELY_PACKAGE_NAME),
+      loadBranchVersions(),
+    ]);
 
     // newest first, stable releases only
     const stable = published
@@ -21,13 +38,17 @@ export class KyselyManager {
       (it, index) => index < KYSELY_MIN_VERSIONS || it.publishedAt >= cutoffMs,
     );
 
-    return new KyselyManager(versions);
+    return new KyselyManager(versions, branches);
   }
 
-  private constructor(private readonly versions: ReadonlyArray<NpmVersion>) {}
+  private constructor(
+    private readonly versions: ReadonlyArray<NpmVersion>,
+    private readonly branches: ReadonlyArray<BranchVersion>,
+  ) {}
 
   getVersions(): string[] {
-    return this.versions.map((it) => it.version);
+    // branches first, so the bleeding-edge options are easy to spot
+    return [...this.branches.map((it) => it.name), ...this.versions.map((it) => it.version)];
   }
 
   getLatestVersion(): string {
@@ -35,10 +56,17 @@ export class KyselyManager {
   }
 
   hasVersion(version: string): boolean {
-    return this.versions.some((it) => it.version === version);
+    return (
+      this.branches.some((it) => it.name === version) ||
+      this.versions.some((it) => it.version === version)
+    );
   }
 
   getModule(version: string): KyselyModule {
+    const branch = this.branches.find((it) => it.name === version);
+    if (branch) {
+      return new KyselyModule(version, branch.moduleSpecifiers);
+    }
     const published = this.versions.find((it) => it.version === version);
     if (!published) {
       throw new Error(`kysely ${version} not found`);
@@ -47,4 +75,25 @@ export class KyselyManager {
     // `exports`, so new kysely subpath exports work without playground changes.
     return new KyselyModule(version, listExportedModules(KYSELY_PACKAGE_NAME, published.exports));
   }
+}
+
+/**
+ * Resolves the importable modules of each kysely git branch from the `exports`
+ * of its `package.json` (served by esm.sh). A branch that can't be loaded —
+ * e.g. it was deleted, or esm.sh is unreachable — is dropped so the playground
+ * still works without it.
+ */
+async function loadBranchVersions(): Promise<Array<BranchVersion>> {
+  const branches = await Promise.all(
+    KYSELY_BRANCH_VERSIONS.map(async (name): Promise<BranchVersion | undefined> => {
+      try {
+        const exports = await fetchEsmShExports(kyselyEsmShName(name), name);
+        return { name, moduleSpecifiers: listExportedModules(KYSELY_PACKAGE_NAME, exports) };
+      } catch (e) {
+        logger.error(`failed to load kysely branch '${name}'`, e);
+        return undefined;
+      }
+    }),
+  );
+  return branches.filter((it): it is BranchVersion => it !== undefined);
 }
