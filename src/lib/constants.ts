@@ -7,15 +7,14 @@ export const DEBUG = (() => {
   return new URLSearchParams(window.location.search).has("debug");
 })();
 
-export const JSDELIVR_API_SERVER = "https://data.jsdelivr.com";
-export const JSDELIVR_API_LIST_TAGS = `${JSDELIVR_API_SERVER}/v1/packages/npm/`;
-export const JSDELIVR_ESM = "https://esm.run";
+export const ESM_SH_URL = "https://esm.sh";
+export const NPM_REGISTRY_URL = "https://registry.npmjs.org";
 
-export const GITHUB_MINIFIED_KYSELY_OWNER = "wirekang";
-export const GITHUB_MINIFIED_KYSELY_REPO = "minified-kysely";
-export const GITHUB_MINIFIED_KYSELY_MAIN_BRANCH = "main";
-
-export const GITHUB_API_MINIFIED_KYSELY_MAIN_REFS = `https://api.github.com/repos/${GITHUB_MINIFIED_KYSELY_OWNER}/${GITHUB_MINIFIED_KYSELY_REPO}/git/refs/heads/${GITHUB_MINIFIED_KYSELY_MAIN_BRANCH}`;
+export const KYSELY_PACKAGE_NAME = "kysely";
+/** Always keep at least this many of the most recent kysely versions. */
+export const KYSELY_MIN_VERSIONS = 10;
+/** Drop kysely versions published longer ago than this (unless kept by the minimum). */
+export const KYSELY_MAX_VERSION_AGE_YEARS = 2;
 
 export const FIRESTORE_PROJECT_ID = "kysely-playground";
 export const FIRESTORE_COLLECTION_FRAGMENTS = "states";
@@ -25,7 +24,6 @@ export const CSS_MIN_DESKTOP_WIDTH = 500;
 
 export const LOCALSTORAGE_THEME = "theme";
 export const LOCALSTORAGE_SETTINGS = "settings:";
-export const LOCALSTORAGE_HTTP_CACHE = "cache:";
 
 export const LEGACY_PLAYGROUND_URL = "https://old.kyse.link";
 
@@ -55,29 +53,6 @@ export const SETTING_DEFAULTS: Record<(typeof SETTING_KEYS)[number], boolean> = 
   "save:save-view-state": true,
   "editor:indent-guide": true,
   "editor:lower-debounce-time": false,
-};
-
-export const DIALECT_CONSTRUCTORS = {
-  postgres: {
-    adapter: "PostgresAdapter",
-    introspector: "PostgresIntrospector",
-    queryCompiler: "PostgresQueryCompiler",
-  },
-  mysql: {
-    adapter: "MysqlAdapter",
-    introspector: "MysqlIntrospector",
-    queryCompiler: "MysqlQueryCompiler",
-  },
-  mssql: {
-    adapter: "MssqlAdapter",
-    introspector: "MssqlIntrospector",
-    queryCompiler: "MssqlQueryCompiler",
-  },
-  sqlite: {
-    adapter: "SqliteAdapter",
-    introspector: "SqliteIntrospector",
-    queryCompiler: "SqliteQueryCompiler",
-  },
 };
 
 export const DEBOUNCE_TIME = 400;

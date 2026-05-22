@@ -282,21 +282,15 @@ function setupPanels() {
 }
 
 function setupVersionController() {
-  D.versionController.setOptions(D.kyselyManager.getModuleIds());
-  D.versionController.setValue(D.kyselyModule.id);
-  D.versionController.onChange((id) => {
-    const newModule = D.kyselyManager.getModule(id)!;
-    patchState({
-      kysely: {
-        type: newModule.type,
-        name: newModule.name,
-      },
-    });
+  D.versionController.setOptions(D.kyselyManager.getVersions());
+  D.versionController.setValue(D.kyselyModule.version);
+  D.versionController.onChange((version) => {
+    patchState({ kysely: { version } });
   });
 }
 
 function setupDialectController() {
-  D.dialectController.setOptions([...D.kyselyModule.dialects]);
+  D.dialectController.setOptions(D.kyselyModule.getDialects());
   D.dialectController.setValue(D.state.dialect);
   D.dialectController.onChange((dialect: any) => {
     patchState({ dialect });
@@ -330,7 +324,7 @@ function setupTypeEditorController() {
 }
 
 function setupQueryEditorController() {
-  const header = PlaygroundUtils.makeQueryEditorHeader(D.state.dialect);
+  const header = PlaygroundUtils.makeQueryEditorHeader(D.kyselyModule.getDialect(D.state.dialect)!);
   D.queryEditorController.setValue(header + D.state.editors.query);
   D.queryEditorController.setHiddenHeader(header);
 
@@ -478,8 +472,7 @@ function makeState(): State {
     },
     dialect: D.state.dialect,
     kysely: {
-      type: D.kyselyModule.type,
-      name: D.kyselyModule.name,
+      version: D.kyselyModule.version,
     },
     hideType: SettingsUtils.get("save:save-view-state") && D.panel0.isHidden() ? true : undefined,
   };
@@ -497,15 +490,25 @@ async function patchState(p: Partial<State>) {
 }
 
 function initKyselyModule() {
-  if (D.state.kysely) {
-    const m = D.kyselyManager.findModule(D.state.kysely.type, D.state.kysely.name);
-    if (m) {
-      D.kyselyModule = m;
-      return;
-    }
-    ToastUtils.show("error", `${D.state.kysely.type}:${D.state.kysely.name} not found.`);
+  const requested = getRequestedKyselyVersion(D.state);
+  if (requested && !D.kyselyManager.hasVersion(requested)) {
+    ToastUtils.show("error", `kysely ${requested} not found.`);
   }
-  D.kyselyModule = D.kyselyManager.getLatestTagModule();
+  const version =
+    requested && D.kyselyManager.hasVersion(requested) ? requested : D.kyselyManager.getLatestVersion();
+  D.kyselyModule = D.kyselyManager.getModule(version);
+
+  const dialects = D.kyselyModule.getDialects();
+  if (!dialects.includes(D.state.dialect)) {
+    D.state.dialect = dialects[0];
+  }
+}
+
+function getRequestedKyselyVersion(state: State): string | undefined {
+  // `name` is read for backward compatibility with playgrounds saved before
+  // versions were sourced from npm (they stored `{ type, name }`).
+  const kysely = state.kysely as { version?: string; name?: string } | undefined;
+  return kysely?.version ?? kysely?.name;
 }
 
 async function copyText(v: string, msg: string) {
@@ -518,7 +521,7 @@ async function copyText(v: string, msg: string) {
 }
 
 function setupGtag() {
-  const params = { dialect: D.state.dialect, version: D.state.kysely?.name } as any;
+  const params = { dialect: D.state.dialect, version: D.state.kysely?.version } as any;
   if (DEBUG) {
     params.debug_mode = true;
   }

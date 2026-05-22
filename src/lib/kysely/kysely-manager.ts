@@ -1,91 +1,44 @@
-import { HttpUtils } from "../utility/http-utils";
-import {
-  GITHUB_API_MINIFIED_KYSELY_MAIN_REFS,
-  GITHUB_MINIFIED_KYSELY_OWNER,
-  GITHUB_MINIFIED_KYSELY_REPO,
-} from "../constants";
-import { JsDelivrUtils } from "../utility/jsdelivr-utils";
+import { prerelease, rcompare } from "semver";
+import { KYSELY_MAX_VERSION_AGE_YEARS, KYSELY_MIN_VERSIONS, KYSELY_PACKAGE_NAME } from "../constants";
+import { listNpmVersions } from "../utility/npm-registry-utils";
 import { KyselyModule } from "./kysely-module";
 
 export class KyselyManager {
   static async init(): Promise<KyselyManager> {
-    const minifiedCommitId = await getLatestMinifiedCommitId();
-    const infoJson = await getInfoJson(minifiedCommitId);
-    const lastCommitId = infoJson.lastCommitId;
-    const modules: Array<KyselyModule> = [];
+    const published = await listNpmVersions(KYSELY_PACKAGE_NAME);
 
-    infoJson.tags.forEach((tag: any) => {
-      modules.unshift(
-        new KyselyModule(
-          "tag",
-          tag.name,
-          tag.commitId,
-          minifiedCommitId,
-          tag.dir,
-          tag.files,
-          tag.exports,
-          tag.dependencies,
-          tag.dialects,
-        ),
-      );
-    });
-    infoJson.branches.forEach((branch: any) => {
-      modules.unshift(
-        new KyselyModule(
-          "branch",
-          branch.name,
-          branch.commitId,
-          minifiedCommitId,
-          branch.dir,
-          branch.files,
-          branch.exports,
-          branch.dependencies,
-          branch.dialects,
-        ),
-      );
-    });
+    // newest first, stable releases only
+    const stable = published
+      .filter((it) => prerelease(it.version) === null)
+      .sort((a, b) => rcompare(a.version, b.version));
 
-    return new KyselyManager(minifiedCommitId, lastCommitId, modules);
+    const cutoff = new Date();
+    cutoff.setFullYear(cutoff.getFullYear() - KYSELY_MAX_VERSION_AGE_YEARS);
+    const cutoffMs = cutoff.getTime();
+
+    // keep everything from the last N years, but never fewer than the latest M
+    const versions = stable
+      .filter((it, index) => index < KYSELY_MIN_VERSIONS || it.publishedAt >= cutoffMs)
+      .map((it) => it.version);
+
+    return new KyselyManager(versions);
   }
 
-  private constructor(
-    private readonly minifiedCommitId: string,
-    readonly lastCommitId: string,
-    private readonly modules: ReadonlyArray<KyselyModule>,
-  ) {}
+  private constructor(private readonly versions: ReadonlyArray<string>) {}
 
-  getModule(id: string) {
-    return this.modules.find((it) => it.id === id);
+  getVersions(): string[] {
+    return this.versions.slice();
   }
 
-  findModule(type: string, name: string): KyselyModule | undefined {
-    return this.modules.find((it) => it.type === type && it.name === name);
+  getLatestVersion(): string {
+    return this.versions[0];
   }
 
-  getModuleIds(): Array<string> {
-    return this.modules.map((m) => m.id);
+  hasVersion(version: string): boolean {
+    return this.versions.includes(version);
   }
 
-  getLatestTagModule(): KyselyModule {
-    return this.modules.find((m) => m.type === "tag")!;
+  getModule(version: string): KyselyModule {
+    return new KyselyModule(version);
   }
-}
-
-async function getLatestMinifiedCommitId() {
-  try {
-    return (await HttpUtils.getJsonOrCache(GITHUB_API_MINIFIED_KYSELY_MAIN_REFS, 120)).object.sha as string;
-  } catch (e) {
-    throw Error(`GitHub API Error: ${e}`);
-  }
-}
-
-function getInfoJson(commitId: string) {
-  return HttpUtils.getJson(
-    JsDelivrUtils.github(
-      GITHUB_MINIFIED_KYSELY_OWNER,
-      GITHUB_MINIFIED_KYSELY_REPO,
-      commitId,
-      "dist/info.json",
-    ),
-  );
 }

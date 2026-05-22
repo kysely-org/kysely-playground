@@ -1,12 +1,13 @@
+import type { SqlDialect } from "../kysely/kysely-dialects";
+
 export type State = {
-  dialect: "postgres" | "mysql" | "mssql" | "sqlite";
+  dialect: SqlDialect;
   editors: {
     type: string;
     query: string;
   };
   hideType?: boolean;
   kysely?: {
-    type: "tag" | "branch";
-    name: string;
+    version: string;
   };
 };
