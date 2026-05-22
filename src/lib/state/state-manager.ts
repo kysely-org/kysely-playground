@@ -13,7 +13,11 @@ export class StateManager {
     logger.debug("encode state");
     const encoded = await lzEncode(JSON.stringify(state));
     const header: FragmentHeader = "c";
-    window.history.replaceState(null, "", window.location.origin + window.location.search);
+    window.history.replaceState(
+      null,
+      "",
+      window.location.origin + window.location.pathname + window.location.search,
+    );
     window.location.hash = header + encoded;
   }
 
