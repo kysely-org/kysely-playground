@@ -3,7 +3,7 @@ import type { KyselyDialect } from "../kysely/kysely-dialects";
 
 export class PlaygroundUtils {
   static getEntrypointUrl() {
-    return window.origin + `/playground.js`;
+    return window.origin + import.meta.env.BASE_URL + "playground.js";
   }
 
   static makeQueryEditorHeader(dialect: KyselyDialect) {

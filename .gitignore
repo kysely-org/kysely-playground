@@ -23,4 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 
+# Build artifacts
 stats.html
+public/playground.js
