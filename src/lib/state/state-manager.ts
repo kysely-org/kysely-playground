@@ -3,23 +3,15 @@ import { logger } from "../utility/logger";
 import { StringUtils } from "../utility/string-utils";
 import { ValidateUtils } from "../utility/validate-utils";
 import { State } from "./state";
-import { FirestoreStateRepository } from "./firestore-state-repository";
 
 export class StateManager {
-  constructor(private readonly firestoreStateRepository: FirestoreStateRepository) {}
-
   /**
    * Encode the state and update url.
    */
-  async save(state: State, shorten: boolean) {
+  async save(state: State) {
     validate(state);
     logger.debug("encode state");
     const encoded = await lzEncode(JSON.stringify(state));
-    if (shorten) {
-      const id = await this.firestoreStateRepository.add(encoded);
-      window.history.replaceState(null, "", window.location.origin + "/" + id + window.location.search);
-      return;
-    }
     const header: FragmentHeader = "c";
     window.history.replaceState(null, "", window.location.origin + window.location.search);
     window.location.hash = header + encoded;
@@ -31,18 +23,10 @@ export class StateManager {
   async load(): Promise<State> {
     checkLegacyParams();
     const fragment = StringUtils.trimPrefix(window.location.hash, "#");
-    const path = StringUtils.trimPrefix(window.location.pathname, "/");
-    if (fragment === "" && path === "") {
+    if (fragment === "") {
       return DEFUALT_STATE;
     }
-
-    if (fragment !== "" && path !== "") {
-      throw new StateManagerError(`both fragment and path are given`);
-    }
-    if (fragment !== "") {
-      return this.loadFragment(fragment);
-    }
-    return this.loadPath(path);
+    return this.loadFragment(fragment);
   }
 
   private async loadFragment(fragment: string) {
@@ -66,12 +50,6 @@ export class StateManager {
     const state = JSON.parse(json) as State;
     validate(state);
     return state;
-  }
-
-  private async loadPath(path: string) {
-    const id = path;
-    logger.debug(`get firestore state by id ${id}`);
-    return JSON.parse(await lzDecode(await this.firestoreStateRepository.get(id)));
   }
 }
 

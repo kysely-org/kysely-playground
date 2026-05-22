@@ -16,9 +16,6 @@ export const KYSELY_MIN_VERSIONS = 10;
 /** Drop kysely versions published longer ago than this (unless kept by the minimum). */
 export const KYSELY_MAX_VERSION_AGE_YEARS = 2;
 
-export const FIRESTORE_PROJECT_ID = "kysely-playground";
-export const FIRESTORE_COLLECTION_FRAGMENTS = "states";
-
 export const CSS_MIN_WIDE_WIDTH = 650;
 export const CSS_MIN_DESKTOP_WIDTH = 500;
 

@@ -3,7 +3,6 @@ import { EditorController } from "./controllers/editor-controller";
 import { ElementController } from "./controllers/element-controller";
 import { CssUtils } from "./lib/utility/css-utils";
 import { StateManager } from "./lib/state/state-manager";
-import { FirestoreStateRepository } from "./lib/state/firestore-state-repository";
 import { SelectController } from "./controllers/select-controller";
 import { KyselyManager } from "./lib/kysely/kysely-manager";
 import { State } from "./lib/state/state";
@@ -73,7 +72,7 @@ async function init() {
 
   D.resultController = new ResultController(e`result`);
   setupResultController();
-  D.stateManager = new StateManager(new FirestoreStateRepository());
+  D.stateManager = new StateManager();
   D.versionController = new SelectController(e`version`);
   D.dialectController = new SelectController(e`dialect`);
   D.switchThemeController = new ElementController(e`switch-theme`);
@@ -193,8 +192,7 @@ async function setupMoreController() {
 
   const actionKey = DomUtils.isMac() ? "Cmd" : "Ctrl";
   D.morePopupController.appendHint("To share a playground, press 'Save'");
-  D.morePopupController.appendButton("Save", `${actionKey}-S`, save.bind(null, false));
-  D.morePopupController.appendButton("Save and shorten link", `${actionKey}-Shift-S`, save.bind(null, true));
+  D.morePopupController.appendButton("Save", `${actionKey}-S`, save);
   D.morePopupController.appendButton("Toggle type-editor", `F2`, toggleTypeEditor);
   D.morePopupController.appendText(" ");
 
@@ -418,19 +416,18 @@ function setupHotKeys() {
   if (DomUtils.hasSearchParam("nohotkey")) {
     return;
   }
-  HotkeyUtils.register(["ctrl"], "s", save.bind(null, false));
-  HotkeyUtils.register(["ctrl", "shift"], "s", save.bind(null, true));
+  HotkeyUtils.register(["ctrl"], "s", save);
   HotkeyUtils.register([], "f1", D.morePopupController.toggle.bind(D.morePopupController));
   HotkeyUtils.register([], "f2", toggleTypeEditor);
 }
 
-async function save(shorten: boolean) {
-  GtagUtils.event("save", { shorten });
+async function save() {
+  GtagUtils.event("save");
   await useLoading(async () => {
     if (SettingsUtils.get("save:format-before-save")) {
       await formatEditors();
     }
-    await D.stateManager.save(makeState(), shorten);
+    await D.stateManager.save(makeState());
     if (SettingsUtils.get("save:copy-url-after-save")) {
       await ClipboardUtils.writeText(window.location.toString());
       ToastUtils.show("info", "URL copied");
@@ -481,7 +478,7 @@ function makeState(): State {
 }
 
 async function reloadState(s: State) {
-  await D.stateManager.save(s, false);
+  await D.stateManager.save(s);
   window.location.reload();
 }
 
