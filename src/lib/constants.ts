@@ -39,6 +39,18 @@ export const LEGACY_PLAYGROUND_URL = "https://old.kyse.link";
  */
 export const SHORTEN_UI_AVAILABLE_FROM = Date.parse("2026-08-11T00:00:00Z");
 
+export const SHORTEN_UI_ENABLED = (() => {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  // github pages serves the fallback during cloudflare outages - the state
+  // api is unreachable there.
+  if (window.location.hostname.endsWith(".github.io")) {
+    return false;
+  }
+  return Date.now() >= SHORTEN_UI_AVAILABLE_FROM;
+})();
+
 export const QUERY_EDITOR_HEADER_DELIMITER = "\n/* __QUERY_EDITOR_HEADER_DELIMITER__ */\n";
 
 export const SETTING_KEYS = [

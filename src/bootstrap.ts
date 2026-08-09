@@ -20,7 +20,7 @@ import { ClipboardUtils } from "./lib/utility/clipboard-utils";
 import { Formatter } from "./lib/format/formatter";
 import { ToastUtils } from "./lib/utility/toast-utils";
 import { MorePopupController } from "./controllers/more-popup-controller";
-import { DEBUG, SETTING_KEYS, SHORTEN_UI_AVAILABLE_FROM } from "./lib/constants";
+import { DEBUG, SETTING_KEYS, SHORTEN_UI_ENABLED } from "./lib/constants";
 import { SettingsUtils } from "./lib/utility/settings-utils";
 import { PanelContainerController } from "./controllers/panel-container-controller";
 import { DomUtils } from "./lib/utility/dom-utils";
@@ -194,7 +194,7 @@ async function setupMoreController() {
   const actionKey = DomUtils.isMac() ? "Cmd" : "Ctrl";
   D.morePopupController.appendHint("To share a playground, press 'Save'");
   D.morePopupController.appendButton("Save", `${actionKey}-S`, save.bind(null, false));
-  if (Date.now() >= SHORTEN_UI_AVAILABLE_FROM) {
+  if (SHORTEN_UI_ENABLED) {
     D.morePopupController.appendButton("Save and shorten link", `${actionKey}-Shift-S`, save.bind(null, true));
   }
   D.morePopupController.appendButton("Toggle type-editor", `F2`, toggleTypeEditor);
@@ -421,7 +421,7 @@ function setupHotKeys() {
     return;
   }
   HotkeyUtils.register(["ctrl"], "s", save.bind(null, false));
-  if (Date.now() >= SHORTEN_UI_AVAILABLE_FROM) {
+  if (SHORTEN_UI_ENABLED) {
     HotkeyUtils.register(["ctrl", "shift"], "s", save.bind(null, true));
   }
   HotkeyUtils.register([], "f1", D.morePopupController.toggle.bind(D.morePopupController));
