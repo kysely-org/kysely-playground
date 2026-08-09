@@ -10,15 +10,17 @@
   --result-error: #f00;
   --lo-bg: #fff8;
 
+  /* VS Code Light+, matching kysely.dev */
   --hljs-bg: white;
   --hljs-fg: black;
   --hljs-comment: #008000;
-  --hljs-keyword: #00f;
+  --hljs-keyword: #0000ff;
   --hljs-string: #a31515;
-  --hljs-deletion: #2b91af;
+  --hljs-number: #098658;
+  --hljs-deletion: #a31515;
   --hljs-doctag: #808080;
-  --hljs-attr: #f00;
-  --hljs-symbol: #00b0e8;
+  --hljs-attr: #e50000;
+  --hljs-symbol: #0070c1;
 
   --tst-bg1: #333;
   --tst-bg2: #444;
@@ -37,15 +39,17 @@
   --result-error: #f44;
   --lo-bg: #0008;
 
+  /* VS Code Dark+, matching kysely.dev */
   --hljs-bg: #1e1e1e;
-  --hljs-fg: #dcdcdc;
-  --hljs-comment: #57a64a;
+  --hljs-fg: #d4d4d4;
+  --hljs-comment: #6a9955;
   --hljs-keyword: #569cd6;
-  --hljs-string: #d69d85;
-  --hljs-deletion: #600;
-  --hljs-doctag: #608b4e;
+  --hljs-string: #ce9178;
+  --hljs-number: #b5cea8;
+  --hljs-deletion: #ce9178;
+  --hljs-doctag: #6a9955;
   --hljs-attr: #9cdcfe;
-  --hljs-symbol: #569cd6;
+  --hljs-symbol: #4fc1ff;
 
   --tst-bg1: #eee;
   --tst-bg2: #ddd;
@@ -163,19 +167,22 @@
 .hljs-selector-tag,
 .hljs-built_in,
 .hljs-name,
-.hljs-tag {
+.hljs-tag,
+.hljs-literal {
   color: var(--hljs-keyword);
 }
 .hljs-string,
 .hljs-title,
 .hljs-section,
 .hljs-attribute,
-.hljs-literal,
 .hljs-template-tag,
 .hljs-template-variable,
 .hljs-type,
 .hljs-addition {
   color: var(--hljs-string);
+}
+.hljs-number {
+  color: var(--hljs-number);
 }
 .hljs-deletion,
 .hljs-selector-attr,

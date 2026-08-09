@@ -7,7 +7,22 @@ export class MonacoUtils {
         return new (await import("monaco-editor/esm/vs/language/typescript/ts.worker?worker")).default();
       },
     };
-    const monaco = await import("monaco-editor");
+    const [monaco, { shikiToMonaco }, { createHighlighterCore }, { createJavaScriptRegexEngine }] =
+      await Promise.all([
+        import("monaco-editor"),
+        import("@shikijs/monaco"),
+        import("shiki/core"),
+        import("shiki/engine/javascript"),
+      ]);
+    // Replace monaco's built-in monarch highlighting with shiki's
+    // textmate-grammar highlighting, using the same VS Code themes as
+    // kysely.dev.
+    const highlighter = await createHighlighterCore({
+      themes: [import("shiki/themes/dark-plus.mjs"), import("shiki/themes/light-plus.mjs")],
+      langs: [import("shiki/langs/typescript.mjs")],
+      engine: createJavaScriptRegexEngine(),
+    });
+    shikiToMonaco(highlighter, monaco);
     monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
       moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
       module: monaco.languages.typescript.ModuleKind.ESNext,
