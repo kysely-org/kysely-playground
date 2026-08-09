@@ -4,8 +4,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "pnpm build:public && tsc && vite build",
+    "dev:worker": "wrangler dev",
+    "build": "pnpm build:public && tsc && tsc -p worker && vite build",
     "build:public": "tsc -p tsconfig.pub.json",
+    "deploy": "pnpm build && wrangler deploy",
     "test": "vitest"
   },
   "dependencies": {
@@ -21,12 +23,14 @@
     "typescript": "5.0.2"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260808.1",
     "@types/node": "^18.15.12",
     "@types/semver": "7.7.1",
     "kysely-0.27.2": "npm:kysely@0.27.2",
     "rollup-plugin-visualizer": "^5.12.0",
     "vite": "^5.0.12",
-    "vitest": "^1.2.1"
+    "vitest": "^1.2.1",
+    "wrangler": "^4.120.0"
   },
   "packageManager": "pnpm@11.2.2+sha512.36e6621fad506178936455e70247b8808ef4ec25797a9f437a93281a020484e2607f6a469a22e982987c3dbb8866e3071514ab10a4a1749e06edcd1ec118436f"
 }

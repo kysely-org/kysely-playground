@@ -1,0 +1,28 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kysely-playground",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-08-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "STATES",
+      "id": "d56d3f73f27f45989d3971804cb3c67a"
+    }
+  ],
+  // route (not custom domain) so the underlying play CNAME survives as an
+  // instant rollback lever - delete the route and github pages serves again.
+  "routes": [
+    {
+      "pattern": "play.kysely.dev/*",
+      "zone_name": "kysely.dev"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

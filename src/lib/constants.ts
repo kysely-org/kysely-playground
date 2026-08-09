@@ -32,6 +32,13 @@ export const LOCALSTORAGE_SETTINGS = "settings:";
 
 export const LEGACY_PLAYGROUND_URL = "https://old.kyse.link";
 
+/**
+ * Hide the shorten-link ui until this date - the 2026-08-09 firestore
+ * migration consumed ~995 of the free tier's 1,000 kv writes/day.
+ * Remove after launch.
+ */
+export const SHORTEN_UI_AVAILABLE_FROM = Date.parse("2026-08-11T00:00:00Z");
+
 export const QUERY_EDITOR_HEADER_DELIMITER = "\n/* __QUERY_EDITOR_HEADER_DELIMITER__ */\n";
 
 export const SETTING_KEYS = [
