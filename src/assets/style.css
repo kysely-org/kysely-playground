@@ -170,6 +170,12 @@ body {
   white-space: pre;
 }
 
+#more-popup > .item > .link {
+  font-size: 0.8rem;
+  white-space: pre;
+  text-decoration: underline;
+}
+
 #more-popup > .item > .button-container {
   font-size: 0.65rem;
   margin-bottom: -1px;

@@ -74,6 +74,17 @@ export class MorePopupController {
     });
   }
 
+  appendLink(name: string, href: string) {
+    return this.append((item) => {
+      const link = document.createElement("a");
+      link.classList.add("link");
+      link.textContent = name;
+      link.href = href;
+      link.target = "_blank";
+      item.appendChild(link);
+    });
+  }
+
   appendButton(name: string, hotkey: string, cb: () => unknown) {
     return this.append((item) => {
       const bc = document.createElement("button");
