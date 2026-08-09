@@ -28,7 +28,7 @@ export class EditorController {
       lineNumbersMinChars: 0,
       showFoldingControls: "never",
       overviewRulerLanes: 0,
-      theme: CssUtils.getTheme() === "dark" ? "vs-dark" : "vs",
+      theme: CssUtils.getTheme() === "dark" ? "dark-plus" : "light-plus",
       padding: { top: 2 },
       contextmenu: false,
       scrollbar: {
@@ -69,7 +69,7 @@ export class EditorController {
   private constructor(private readonly editor: monaco.editor.IStandaloneCodeEditor) {
     import("monaco-editor").then((monaco) => {
       CssUtils.colorSchemaEffect(async (light) => {
-        monaco.editor.setTheme(light ? "vs" : "vs-dark");
+        monaco.editor.setTheme(light ? "light-plus" : "dark-plus");
       });
       const model = this.editor.getModel()!;
       model.setEOL(monaco.editor.EndOfLineSequence.LF);
