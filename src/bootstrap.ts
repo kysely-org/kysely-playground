@@ -3,6 +3,7 @@ import { EditorController } from "./controllers/editor-controller";
 import { ElementController } from "./controllers/element-controller";
 import { CssUtils } from "./lib/utility/css-utils";
 import { StateManager } from "./lib/state/state-manager";
+import { WorkerStateRepository } from "./lib/state/worker-state-repository";
 import { SelectController } from "./controllers/select-controller";
 import { KyselyManager } from "./lib/kysely/kysely-manager";
 import { State } from "./lib/state/state";
@@ -19,7 +20,7 @@ import { ClipboardUtils } from "./lib/utility/clipboard-utils";
 import { Formatter } from "./lib/format/formatter";
 import { ToastUtils } from "./lib/utility/toast-utils";
 import { MorePopupController } from "./controllers/more-popup-controller";
-import { DEBUG, SETTING_KEYS } from "./lib/constants";
+import { DEBUG, SETTING_KEYS, SHORTEN_UI_ENABLED } from "./lib/constants";
 import { SettingsUtils } from "./lib/utility/settings-utils";
 import { PanelContainerController } from "./controllers/panel-container-controller";
 import { DomUtils } from "./lib/utility/dom-utils";
@@ -72,7 +73,7 @@ async function init() {
 
   D.resultController = new ResultController(e`result`);
   setupResultController();
-  D.stateManager = new StateManager();
+  D.stateManager = new StateManager(new WorkerStateRepository());
   D.versionController = new SelectController(e`version`);
   D.dialectController = new SelectController(e`dialect`);
   D.switchThemeController = new ElementController(e`switch-theme`);
@@ -192,7 +193,10 @@ async function setupMoreController() {
 
   const actionKey = DomUtils.isMac() ? "Cmd" : "Ctrl";
   D.morePopupController.appendHint("To share a playground, press 'Save'");
-  D.morePopupController.appendButton("Save", `${actionKey}-S`, save);
+  D.morePopupController.appendButton("Save", `${actionKey}-S`, save.bind(null, false));
+  if (SHORTEN_UI_ENABLED) {
+    D.morePopupController.appendButton("Save and shorten link", `${actionKey}-Shift-S`, save.bind(null, true));
+  }
   D.morePopupController.appendButton("Toggle type-editor", `F2`, toggleTypeEditor);
   D.morePopupController.appendText(" ");
 
@@ -416,21 +420,29 @@ function setupHotKeys() {
   if (DomUtils.hasSearchParam("nohotkey")) {
     return;
   }
-  HotkeyUtils.register(["ctrl"], "s", save);
+  HotkeyUtils.register(["ctrl"], "s", save.bind(null, false));
+  if (SHORTEN_UI_ENABLED) {
+    HotkeyUtils.register(["ctrl", "shift"], "s", save.bind(null, true));
+  }
   HotkeyUtils.register([], "f1", D.morePopupController.toggle.bind(D.morePopupController));
   HotkeyUtils.register([], "f2", toggleTypeEditor);
 }
 
-async function save() {
-  GtagUtils.event("save");
+async function save(shorten: boolean) {
+  GtagUtils.event("save", { shorten });
   await useLoading(async () => {
-    if (SettingsUtils.get("save:format-before-save")) {
-      await formatEditors();
-    }
-    await D.stateManager.save(makeState());
-    if (SettingsUtils.get("save:copy-url-after-save")) {
-      await ClipboardUtils.writeText(window.location.toString());
-      ToastUtils.show("info", "URL copied");
+    try {
+      if (SettingsUtils.get("save:format-before-save")) {
+        await formatEditors();
+      }
+      await D.stateManager.save(makeState(), shorten);
+      if (SettingsUtils.get("save:copy-url-after-save")) {
+        await ClipboardUtils.writeText(window.location.toString());
+        ToastUtils.show("info", "URL copied");
+      }
+    } catch (e) {
+      logger.error("Failed to save\n", e);
+      ToastUtils.show("error", shorten ? "Failed to shorten link" : "Failed to save");
     }
   });
 }
@@ -478,7 +490,7 @@ function makeState(): State {
 }
 
 async function reloadState(s: State) {
-  await D.stateManager.save(s);
+  await D.stateManager.save(s, false);
   window.location.reload();
 }
 
