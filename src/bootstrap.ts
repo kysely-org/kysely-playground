@@ -222,6 +222,9 @@ async function setupMoreController() {
   D.morePopupController.appendHeading("runtime");
   D.morePopupController.appendText(`typescript     ${versions.typescript}`);
   D.morePopupController.appendText(`monaco-editor  ${versions.monaco}`);
+
+  D.morePopupController.appendHeading("credits");
+  D.morePopupController.appendLink("wirekang - original author", "https://github.com/wirekang");
 }
 
 function initExecuter() {

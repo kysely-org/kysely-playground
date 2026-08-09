@@ -110,6 +110,10 @@
   color: var(--fg);
 }
 
+#more-popup > .item > .link {
+  color: var(--fg);
+}
+
 #more-popup > .item > .button-container > .name {
   border-color: var(--fg);
 }
